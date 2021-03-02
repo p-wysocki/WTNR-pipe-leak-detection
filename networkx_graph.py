@@ -2,17 +2,17 @@ from networkx.algorithms.shortest_paths.weighted import all_pairs_dijkstra_path_
 import networkx as nx
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
+import wntr_WSN
 
 
 # constants
 unknown_pressure = -1																			# for initialising a Pipe with unknown pressure (pre-simulation)
-data_file = 'Walkerton_v1.inp'																	# water supply network file
+data_file = wntr_WSN.get_data_file()															# water supply network file
 junctions_with_no_edges = ['JPMP51', 'JPMP63', 'JPMP72', 'R5', 'R6', 'R7']						# nodes not connected to anything
 
 # available measurements
 flows_temp = ['P544', 'P266', 'P22', 'P43', 'P45', 'P539', 'P460', 'P9', 'P13', 'P536', 'P511', 'P46', 'P52', 'P478', 'P520', 'P27',
               'P280', 'P110', 'P213', 'P459', 'P500', 'P174', 'P244', 'P204', 'P55', 'P56']
-
 pressures_temp = ['J163', 'J244', 'J28', 'J137', 'J52', 'J539', 'J284', 'J12', 'J17', 'J163', 'J43', 'J54', 'J60', 'J39', 'J316',
                   'J33', 'J146', 'J113', 'J151', 'J67', 'J79', 'J172', 'J129', 'J207', 'J62', 'J64']
 available_measurements = {'flows': flows_temp, 'pressures': pressures_temp}
@@ -118,22 +118,22 @@ def create_graph() -> nx.classes.graph.Graph:
 	# add pipes (edges)
 	for edge in edges:
 		G.add_edge(edge.node1, edge.node2,
-			weight=float(edge.length), measurement=edge.measurement)
+			weight=float(edge.length), measurement=edge.measurement, name=edge.name)
 
-	return G
+	return G 																					# return nx.classes.graph.Graph
 
-def get_closest_sensors(central_node: str, n: int) -> [list, list]:
+def get_closest_sensors(central_node: str, n: any) -> [list, list]:
 	"""
 	Creates a list of sensors closest to the main node (both pressure and flow)
 				using NetworkX all_pairs_dijkstra_path_length()
 	Arguments:	central_node - name of junction you need sensors positions relative to
-				n - number of closest sensors
+				n - number of closest sensors, int or str ('all' for all sensors)
 	Returns: 	[pressure_sensors, flow_sensors]
 				both lists of n closest [sensor_name, distance_from_main_node]
-				both sorted by distance (ascending)
+				both sorted by distance (ascending), or all sensors if n='all'
 	"""
-	nodes_measured = []																				# which junctions have pressure sensors in them?
-	edges_measured = []																				# which pipes have flow sensors?
+	nodes_measured = []																			# which junctions have pressure sensors in them?
+	edges_measured = []																			# which pipes have flow sensors?
 
 	# make lists of node/edge objects with sensors in them
 	for node in G.nodes(data=True):
@@ -143,35 +143,44 @@ def get_closest_sensors(central_node: str, n: int) -> [list, list]:
 	    if edge[2]['measurement'] is True:
 	        edges_measured.append(edge)
 
-	objects_measured = {'junctions': nodes_measured, 'pipes': edges_measured}						# sum it up in one var
-	shortest_paths = list(all_pairs_dijkstra_path_length(G))										# get shortest distances between all nodes
-	pressure_sensors_with_distance = []
+	objects_measured = {'junctions': nodes_measured, 'pipes': edges_measured}					# sum it up in one var
+	shortest_paths = list(all_pairs_dijkstra_path_length(G))									# get shortest distances between all node pairs
 
-	# find our central_node in weird all_pairs_dijkstra_path_length(G) format 
+	# find our central_node in weird all_pairs_dijkstra_path_length(G) format
 	for centrum in shortest_paths:
 		if centrum[0] == central_node:
 			shortest_paths_from_central_node = centrum
 
     # get a list of pressure sensors with their respective distances from central_node
+	pressure_sensors_with_distance = []
 	for node in objects_measured['junctions']:
 		pressure_sensors_with_distance.append((node[0], shortest_paths_from_central_node[1][node[0]]))
 
 	# do the same for flow sensors
 	flow_sensors_with_distance = []
 	for edge in objects_measured['pipes']:
-		flow_sensors_with_distance.append((edge[0], shortest_paths_from_central_node[1][edge[0]]))
+		flow_sensors_with_distance.append((edge[2]['name'], shortest_paths_from_central_node[1][edge[0]]))
 
 	# sort them by distance (ascending)
 	pressure_sensors_sorted_by_distance = sorted(pressure_sensors_with_distance, key=lambda sensor: sensor[1])
 	flow_sensors_sorted_by_distance = sorted(flow_sensors_with_distance, key=lambda sensor: sensor[1])
 
-	# return only n closest sensors
-	return [pressure_sensors_sorted_by_distance[:n], flow_sensors_sorted_by_distance[:n]]
+	if n == 'all':
+		return [pressure_sensors_sorted_by_distance, flow_sensors_sorted_by_distance]			# return all sensors
+	else:
+		return [pressure_sensors_sorted_by_distance[:n], flow_sensors_sorted_by_distance[:n]]	# return only n closest sensors
+
+def get_sensor_names() -> dict:
+	"""
+	Returns names of available sensors names (dict)
+	Purpose is to get the value to another .py file
+	"""
+	return available_measurements
 
 if __name__ == '__main__':
 
 	G = create_graph()
-	a, b = get_closest_sensors('J63', 3)
+	a, b = get_closest_sensors('J63', 'all')
 	print(b)
 	#nx.draw(G, nx.get_node_attributes(G, 'pos'), node_size=20)
 	#length = wn.query_link_attribute('length')

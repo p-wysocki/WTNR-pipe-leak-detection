@@ -3,19 +3,28 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import networkx as nx
 
+
+data_file = 'Walkerton_v1.inp'																# water supply network .inp file
+
+def get_data_file() -> str:
+	"""
+	Returns name of .inp file (str)
+	Purpose is to get the value to another .py file
+	"""
+	return data_file																	
+
 def get_sim_results() -> wntr.sim.results.SimulationResults:
-	inp_file = 'Walkerton_v1.inp'
-	wn = wntr.network.WaterNetworkModel(inp_file)
+	"""
+	WORK IN PROGRESS
+	Runs and returns a hydraulic simulation WNTR object  
+	"""
+	wn = wntr.network.WaterNetworkModel(data_file)
 	sim = wntr.sim.WNTRSimulator(wn)
 	return sim.run_sim()
 
-def get_water_network_object(weighted = False: bool) -> networkx.classes.multidigraph.MultiDiGraph:
-	
-	return 
-
 if __name__ == '__main__':
 	inp_file = 'Walkerton_v1.inp'
-	wn = wntr.network.WaterNetworkModel(inp_file)
+	wn = wntr.network.WaterNetworkModel(data_file)
 	#sim = wntr.sim.WNTRSimulator(wn)
 	#results = sim.run_sim()
 	length = wn.query_link_attribute('length')
