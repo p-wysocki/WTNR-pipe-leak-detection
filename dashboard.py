@@ -17,11 +17,9 @@ import wtnr_WSN as WSN 																				# local file WTNR Water Supply Networ
 
 app = dash.Dash(__name__)
 sim_results = WSN.get_sim_results()
-#print(results)
 G = ng.create_graph()
 
-#######CREATE NODES/EDGES#############
-
+# create nodes/edges
 edge_x = []
 edge_y = []
 for edge in G.edges():
@@ -76,6 +74,7 @@ node_trace = go.Scatter(
 pressure_measurements = []
 node_names = []
 for node in G.nodes():
+	# get data for t=0 as default
     pressure_measurements.append(sim_results.node['pressure'].loc[0].loc[node])
     node_names.append(node + ' - Pressure: ' + str(round(sim_results.node['pressure'].loc[0].loc[node], 2)) + 'm')
 
@@ -127,6 +126,7 @@ def update_graph(hrs_elapsed):
 	pressure_measurements = []
 	node_names = []
 
+	# re-get water pressure from results DataFrame
 	for node in G.nodes():
 		node_names.append(node + ' - Pressure: ' + str(round(sim_results.node['pressure'].loc[hrs_elapsed*3600].loc[node], 2)) + 'm')
 		pressure_measurements.append(sim_results.node['pressure'].loc[hrs_elapsed*3600].loc[node])
@@ -134,6 +134,7 @@ def update_graph(hrs_elapsed):
 	node_trace.marker.color = pressure_measurements
 	node_trace.text = node_names
 
+	# update the figure
 	return go.Figure(data=[edge_trace, node_trace])
 
 if __name__ == '__main__':
