@@ -102,6 +102,8 @@ def create_graph() -> nx.classes.graph.Graph:
 	Returns:	NetworkX graph (networkx.classes.graph.Graph)
 	"""
 
+	print("Creating a NetworkX graph from .inp file (networkx_graph.py - create_graph())")
+
 	# get data from .inp file
 	nodes, edges = get_node_data(data_file)
 
@@ -122,16 +124,19 @@ def create_graph() -> nx.classes.graph.Graph:
 
 	return G 																					# return nx.classes.graph.Graph
 
-def get_closest_sensors(central_node: str, n: any) -> [list, list]:
+def get_closest_sensors(G: nx.classes.graph.Graph, central_node: str, n: any, shortest_paths: list) -> [list, list]:
 	"""
 	Creates a list of sensors closest to the main node (both pressure and flow)
 				using NetworkX all_pairs_dijkstra_path_length()
-	Arguments:	central_node - name of junction you need sensors positions relative to
+	Arguments:	G - NetworkX graph of the water network
+				central_node - name of junction you need sensors positions relative to
 				n - number of closest sensors, int or str ('all' for all sensors)
+				shortest_paths - list(all_pairs_dijkstra_path_length(G)) from NetworkX
 	Returns: 	[pressure_sensors, flow_sensors]
 				both lists of n closest [sensor_name, distance_from_main_node]
 				both sorted by distance (ascending), or all sensors if n='all'
 	"""
+	#print("Calculationg sensors closest to main node (networkx_graph.py - get_closest_sensors())")
 	nodes_measured = []																			# which junctions have pressure sensors in them?
 	edges_measured = []																			# which pipes have flow sensors?
 
@@ -144,7 +149,6 @@ def get_closest_sensors(central_node: str, n: any) -> [list, list]:
 	        edges_measured.append(edge)
 
 	objects_measured = {'junctions': nodes_measured, 'pipes': edges_measured}					# sum it up in one var
-	shortest_paths = list(all_pairs_dijkstra_path_length(G))									# get shortest distances between all node pairs
 
 	# find our central_node in weird all_pairs_dijkstra_path_length(G) format
 	for centrum in shortest_paths:
@@ -180,7 +184,8 @@ def get_sensor_names() -> dict:
 if __name__ == '__main__':
 
 	G = create_graph()
-	a, b = get_closest_sensors('J63', 'all')
+	shortest_paths = list(all_pairs_dijkstra_path_length(G))
+	a, b = get_closest_sensors(G, 'J63', 'all', shortest_paths)
 	print(b)
 	#nx.draw(G, nx.get_node_attributes(G, 'pos'), node_size=20)
 	#length = wn.query_link_attribute('length')

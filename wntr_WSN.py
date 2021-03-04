@@ -18,9 +18,13 @@ def get_sim_results() -> wntr.sim.results.SimulationResults:
 	WORK IN PROGRESS
 	Runs and returns a hydraulic simulation WNTR object  
 	"""
+	print("Running the simulation (wntr_WSN.py - get_sim_results())")
 	wn = wntr.network.WaterNetworkModel(data_file)
 	sim = wntr.sim.WNTRSimulator(wn)
 	return sim.run_sim()
+
+def simulate_with_leak():
+	pass
 
 if __name__ == '__main__':
 	inp_file = 'Walkerton_v1.inp'
