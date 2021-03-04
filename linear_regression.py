@@ -56,17 +56,7 @@ def model_network_with_linreg(n: any) -> list:
 
 		linreg_models.append(create_linreg_model(node, train_X, test_X, train_y, test_y))
 
-	# debug
-	r2_sum = 0
-	for model in linreg_models:
-		print(model)
-		r2_sum += model['r2']
-	avg_r2 = r2_sum/len(linreg_models)
-	print(f'Average R2 score: {avg_r2}')
-
-	print("Modeling the network finished")
-
-	return avg_r2
+	return linreg_models
 
 def get_all_sensor_readings(sim_results: wntr.sim.results.SimulationResults)\
  -> [pd.core.frame.DataFrame, pd.core.frame.DataFrame]:
@@ -97,8 +87,14 @@ def create_linreg_model(node, train_X, test_X, train_y, test_y) -> dict:
 	"""
 	Creates sklearn linear regression object for a given node
 	Arguments:	node - node name (str)
+				train_X, test_X - (DF)
+				train_y, test_y - (series)
+	Returns:	dict 	{'node', 'regression', 'msq', 'r2'}
+						where:	node - node name (str)
+								regression - sklearn regression object
+								msq - mean squared error (float)
+								r2 - R2 score (float)
 	"""
-	#print(train_X.columns.tolist())
 	# create model and fit the data
 	regression = linear_model.LinearRegression()
 	regression.fit(train_X, train_y)
@@ -117,10 +113,4 @@ def check_network_for_leaks():
 
 if __name__ == '__main__':
 
-	avg_r2_results = []
-	for i in range(1, 10):
-		avg_r2_results.append(model_network_with_linreg(n=i))
-	for i, avg_r2 in enumerate(avg_r2_results):
-		print(f'{2*(i+1)} closest sensors with average R2score per junction of: {avg_r2}')
-
-	#model_network_with_linreg(n=1)
+	model_network_with_linreg(n=1)
