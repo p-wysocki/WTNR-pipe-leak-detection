@@ -40,14 +40,13 @@ def model_network_with_linreg(n: any) -> list:
 	for i, node in enumerate(G.nodes()):
 		print(f'\tModeling junction {node}: ({i+1} out of {amount_of_junctions})')									# printing progress
 		data_X_scope = data_X 																						# copy of data_X inside for scope
-		pressure_sensors, flowrate_sensors = ng.get_closest_sensors(G=G, 											# retrieve sensors closest to node
-																	central_node=node,
-																	n=n,
-																	shortest_paths=shortest_paths)
-		available_sensors = pressure_sensors + flowrate_sensors														# combine two lists (data_X has both pressure
-		available_sensors_names = [i[0] for i in available_sensors]													# and flowrate readings, get rid of distances
+		sensors = ng.get_closest_sensors(G=G, 																		# retrieve sensors closest to node
+										 central_node=node,
+										 n=n,																		# nr of sensors 
+										 shortest_paths=shortest_paths)
+		sensors_names = [i[0] for i in sensors]																		# and flowrate readings, get rid of distances
 
-		data_X_scope = data_X_scope[available_sensors_names]														# extract data for the closest sensors
+		data_X_scope = data_X_scope[sensors_names]																	# extract data for the closest sensors
 
 		data_y = sim_results.node['pressure'][node]																	# get y data for supervised learning
 		train_X, test_X, train_y, test_y = train_test_split(data_X_scope,											# split and shuffle dataset
@@ -113,4 +112,4 @@ def check_network_for_leaks():
 
 if __name__ == '__main__':
 
-	model_network_with_linreg(n=1)
+	x = model_network_with_linreg(n=3)

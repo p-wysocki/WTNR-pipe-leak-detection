@@ -165,14 +165,19 @@ def get_closest_sensors(G: nx.classes.graph.Graph, central_node: str, n: any, sh
 	for edge in objects_measured['pipes']:
 		flow_sensors_with_distance.append((edge[2]['name'], shortest_paths_from_central_node[1][edge[0]]))
 
+	sensors = pressure_sensors_with_distance + flow_sensors_with_distance
+	
+
 	# sort them by distance (ascending)
 	pressure_sensors_sorted_by_distance = sorted(pressure_sensors_with_distance, key=lambda sensor: sensor[1])
 	flow_sensors_sorted_by_distance = sorted(flow_sensors_with_distance, key=lambda sensor: sensor[1])
+	sensors_sorted_by_distance = sorted(sensors, key=lambda sensor: sensor[1])
+
 
 	if n == 'all':
-		return [pressure_sensors_sorted_by_distance, flow_sensors_sorted_by_distance]			# return all sensors
+		return sensors_sorted_by_distance														# return all sensors
 	else:
-		return [pressure_sensors_sorted_by_distance[:n], flow_sensors_sorted_by_distance[:n]]	# return only n closest sensors
+		return sensors_sorted_by_distance[:n]													# return only n closest sensors
 
 def get_sensor_names() -> dict:
 	"""
@@ -186,7 +191,7 @@ if __name__ == '__main__':
 	G = create_graph()
 	shortest_paths = list(all_pairs_dijkstra_path_length(G))
 	a, b = get_closest_sensors(G, 'J63', 'all', shortest_paths)
-	print(b)
+	#print(b)
 	#nx.draw(G, nx.get_node_attributes(G, 'pos'), node_size=20)
 	#length = wn.query_link_attribute('length')
 	#G = wn.get_graph(wn, link_weight=length)
