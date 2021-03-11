@@ -124,7 +124,7 @@ def create_graph() -> nx.classes.graph.Graph:
 
 	return G 																					# return nx.classes.graph.Graph
 
-def get_closest_sensors(G: nx.classes.graph.Graph, central_node: str, n: any, shortest_paths: list) -> [list, list]:
+def get_closest_sensors(G: nx.classes.graph.Graph, central_node: str, n: any, shortest_paths: list) -> list:
 	"""
 	Creates a list of sensors closest to the main node (both pressure and flow)
 				using NetworkX all_pairs_dijkstra_path_length()
@@ -132,9 +132,7 @@ def get_closest_sensors(G: nx.classes.graph.Graph, central_node: str, n: any, sh
 				central_node - name of junction you need sensors positions relative to
 				n - number of closest sensors, int or str ('all' for all sensors)
 				shortest_paths - list(all_pairs_dijkstra_path_length(G)) from NetworkX
-	Returns: 	[pressure_sensors, flow_sensors]
-				both lists of n closest [sensor_name, distance_from_main_node]
-				both sorted by distance (ascending), or all sensors if n='all'
+	Returns: 	list of n closest sensors sorted by distance (ascending), or all sensors if n='all'
 	"""
 	#print("Calculationg sensors closest to main node (networkx_graph.py - get_closest_sensors())")
 	nodes_measured = []																			# which junctions have pressure sensors in them?

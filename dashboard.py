@@ -10,7 +10,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 
 import networkx_graph as ng 																		# local file network_graph.py
-import wtnr_WSN as WSN 																				# local file WTNR Water Supply Network
+import wntr_WSN as WSN 																				# local file WTNR Water Supply Network
 
 # https://towardsdatascience.com/python-interactive-network-visualization-using-networkx-plotly-and-dash-e44749161ed7
 # https://www.youtube.com/watch?v=hSPmj7mK6ng
@@ -85,7 +85,7 @@ fig = go.Figure(data=[edge_trace, node_trace],
 	             layout=go.Layout(
 	                #title='<br>...',
 	                titlefont_size=16,
-	                height=800,
+	                height=801,
 	                showlegend=False,
 	                hovermode='closest',
 	                margin=dict(b=20, l=5, r=5, t=40),

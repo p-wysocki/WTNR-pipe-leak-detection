@@ -65,7 +65,6 @@ def get_all_sensor_readings(sim_results: wntr.sim.results.SimulationResults)\
 	Arguments:	WNTR simulation results object (wntr.sim.results.SimulationResults)
 	Returns:	list of two pandas DataFrames [pressure_readings, flowrate_readings]
 	"""
-	print("Retrieveing all sensor readings (linear_regression.py - get_all_sensor_readings())")
 
 	# retrieve flowrate and pressure sensors names
 	sensors = ng.get_sensor_names()
@@ -107,9 +106,39 @@ def create_linreg_model(node, train_X, test_X, train_y, test_y) -> dict:
 
 	return {'node': node, 'linreg': regression, 'msq': msq, 'r2': r2}
 
+def not_sure_yet(linreg_models: dict) -> float:
+	G = ng.create_graph()
+	nodes_with_errors = set()	# errors on J61, J59, T2, T1 for area=0.001
+	#sim_results_nL = wntr_WSN.get_sim_results()
+	for node in G.nodes():
+		print(f'Simulating node {node} with leak')
+		try:
+			sim_results_L = wntr_WSN.get_sim_results_LEAK(node=node,
+														  area=0.0001,
+														  start_time=30,
+														  end_time=40)
+			pressure_readings, flowrate_readings = get_all_sensor_readings(sim_results_L)
+			leak_node_pressure = sim_results_L.node['pressure'][node].loc[[3600 * i for i in range(10,41)]]# pressures only for a given node in leak timeframe
+		except:
+			nodes_with_errors.add(node)
+			print(f'Runtime error on node {node}')
+		#node_results = sim_results_L
+
+def find_residual_threshold(linreg_models: dict) -> float:
+	G = ng.create_graph()
+	sim_results_nL = wntr_WSN.get_sim_results()
+	for node in G.nodes():
+		for junction in linreg_models:
+			if junction['node'] == node:
+				model = junction['linreg']
+				break
+		print(model)
+
+
 def check_network_for_leaks():
 	pass
 
 if __name__ == '__main__':
 
-	x = model_network_with_linreg(n=3)
+	x = model_network_with_linreg(n='all')
+	find_residual_threshold(x)

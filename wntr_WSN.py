@@ -8,7 +8,7 @@ data_file = 'Walkerton_v1.inp'																# water supply network .inp file
 
 def get_data_file() -> str:
 	"""
-	Returns name of .inp file (str)
+	Returns value of var data_file (str) 
 	Purpose is to get the value to another .py file
 	"""
 	return data_file																	
@@ -24,6 +24,14 @@ def get_sim_results() -> wntr.sim.results.SimulationResults:
 	return sim.run_sim()
 
 def get_sim_results_LEAK(node: str, area: float, start_time: int, end_time: int):
+	"""
+	Runs and returns a hydraulic simulation WNTR object (WITH A LEAK)
+	Arguments:	node - node which will have the leak (str)
+				area - area of the leak in (float, meters squared)
+				start_time - when the leak starts (int, hours)
+				end_time - when the leak ends (int, hours)
+	Returns:	Simulation results (wntr.sim.results.SimulationResults)
+	"""
 	wn_leaks = wntr.network.WaterNetworkModel(data_file)
 	leak_node = wn_leaks.get_node(node)
 	leak_node.add_leak(wn_leaks, area=area, start_time=start_time*3600, end_time=end_time*3600)
