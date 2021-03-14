@@ -1,9 +1,11 @@
 from networkx.algorithms.shortest_paths.weighted import all_pairs_dijkstra_path_length
 from sklearn import linear_model
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 import wntr
 import wntr_WSN
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 import networkx_graph as ng
 import sklearn
 from sklearn.model_selection import train_test_split
@@ -106,6 +108,7 @@ def create_linreg_model(node, train_X, test_X, train_y, test_y) -> dict:
 	# evaluate the model
 	msq = mean_squared_error(test_y, test_pred)
 	r2 = r2_score(test_y, test_pred)
+	print(mean_absolute_error(test_y, test_pred))
 
 	return {'node': node, 'linreg': regression, 'msq': msq, 'r2': r2, 'sensors': train_X.columns.tolist()}
 
@@ -121,13 +124,13 @@ def predict_pressure_on_leaks(linreg_models: list, norm_params: dict, leak_start
 	"""
 	G = ng.create_graph()
 	leak_predictions = {}
-	temp = 0#TEMP simulate leak only for first 10 nodes, to save time in debugging---------------------------------------------------------
+	temp = 0#TEMP simulate leak only for first 4 nodes, to save time in debugging---------------------------------------------------------
 	# for each node simulate its leak, and predict its pressure using its linear regression model
 	for node in G.nodes():
 		print(f'Simulating node {node} with leak')
-		temp += 1#TEMP simulate leak only for first 10 nodes, to save time in debugging---------------------------------------------------------
-		if temp>10:#TEMP simulate leak only for first 10 nodes, to save time in debugging---------------------------------------------------------
-			break#TEMP simulate leak only for first 10 nodes, to save time in debugging---------------------------------------------------------
+		temp += 1#TEMP simulate leak only for first 4 nodes, to save time in debugging---------------------------------------------------------
+		if temp>444:#TEMP simulate leak only for first 4 nodes, to save time in debugging---------------------------------------------------------
+			break#TEMP simulate leak only for first 4 nodes, to save time in debugging---------------------------------------------------------
 		try:
 			# simulate hydraulics with a leak on this particular node
 			sim_results_L = wntr_WSN.get_sim_results_LEAK(node=node, area=leak_area, start_time=leak_start, end_time=leak_end)
@@ -187,16 +190,61 @@ def find_residuals(pressure_predictions_L: pd.core.frame.DataFrame, leak_start: 
 	results = (nodes_pressure_nL - pressure_predictions_L).abs().min(axis=0)
 	return results
 
-def check_network_for_leaks():
-	pass
+def check_network_for_leaks(residuals: pd.core.frame.Series, sim_results_nL: wntr.sim.results.SimulationResults,
+							test_sim: wntr.sim.results.SimulationResults, linreg_models: dict,
+							norm_params: dict) -> pd.core.frame.DataFrame:
+	leak_predictions = {}
+
+	# join flowrate and pressure measurements into a single DataFrame
+	test_sim = pd.concat([test_sim.node['pressure'], test_sim.link['flowrate']], axis=1)
+
+	for node in list(residuals.index.values):
+		# find linear regression model for this particular node
+		for model in linreg_models:
+			if model['node'] == node:
+				linreg_dict = model
+		
+		# choose only the available sensors
+		sim_results_to_check = test_sim[linreg_dict['sensors']]
+
+		# normalise the input data with respective parameters
+		sim_results_to_check = (sim_results_to_check - norm_params['mean'].loc[linreg_dict['sensors']]) / norm_params['std'].loc[linreg_dict['sensors']]
+
+		# predict pressure for each node
+		leak_predictions[node] = linreg_dict['linreg'].predict(sim_results_to_check)
+
+	index = [3600*i for i in range(len(test_sim.index))]
+	results = pd.DataFrame(data=leak_predictions, index=index)
+	#results = pd.DataFrame(data=leak_predictions)
+	results = results[list(residuals.index)]
+	sim_results_nL = sim_results_nL.node['pressure'][list(residuals.index)]
+	subtraction = (sim_results_nL - results).abs()
+	#print(subtraction.loc[10*3600:20*3600])
+	subtraction.plot()
+	plt.show()
+
+	# results = results.sub(residuals, axis=1)
+	#print(results)
+	return results
 
 if __name__ == '__main__':
-	leak_start = 10
-	leak_end = 40
+	leak_start = 1
+	leak_end = 99
 	leak_area = 0.0005
 
 	models, normalization_params = model_network_with_linreg(n='all')
 	pressure_predicted_L = predict_pressure_on_leaks(linreg_models=models, norm_params=normalization_params,
 													 leak_start=leak_start, leak_end=leak_end, leak_area=leak_area)
 	residuals = find_residuals(pressure_predictions_L=pressure_predicted_L, leak_start=leak_start, leak_end=leak_end)
-	print(residuals)
+
+	G = ng.create_graph()
+
+	# get simulation results for the network WITHOUT leaks
+	sim_results_nL = wntr_WSN.get_sim_results()
+
+	node = 'J3'
+	test_leak_start = 10
+	test_leak_end = 40
+	network_to_be_checked = wntr_WSN.get_sim_results_LEAK(node=node, area=0.001, start_time=test_leak_start, end_time=test_leak_end)
+
+	idk = check_network_for_leaks(residuals, sim_results_nL, network_to_be_checked, models, normalization_params)
