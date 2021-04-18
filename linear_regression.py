@@ -108,7 +108,6 @@ def create_linreg_model(node, train_X, test_X, train_y, test_y) -> dict:
 	# evaluate the model
 	msq = mean_squared_error(test_y, test_pred)
 	r2 = r2_score(test_y, test_pred)
-	print(mean_absolute_error(test_y, test_pred))
 
 	return {'node': node, 'linreg': regression, 'msq': msq, 'r2': r2, 'sensors': train_X.columns.tolist()}
 
@@ -129,7 +128,7 @@ def predict_pressure_on_leaks(linreg_models: list, norm_params: dict, leak_start
 	for node in G.nodes():
 		print(f'Simulating node {node} with leak')
 		temp += 1#TEMP simulate leak only for first 4 nodes, to save time in debugging---------------------------------------------------------
-		if temp>444:#TEMP simulate leak only for first 4 nodes, to save time in debugging---------------------------------------------------------
+		if temp>10:#TEMP simulate leak only for first 4 nodes, to save time in debugging---------------------------------------------------------
 			break#TEMP simulate leak only for first 4 nodes, to save time in debugging---------------------------------------------------------
 		try:
 			# simulate hydraulics with a leak on this particular node
@@ -187,12 +186,29 @@ def find_residuals(pressure_predictions_L: pd.core.frame.DataFrame, leak_start: 
 	nodes_pressure_nL = nodes_pressure_nL[pressure_predictions_L.columns.tolist()]
 
 	# get absolute diffrence, then choose the minima for each node (column)
+
+	#results = (nodes_pressure_nL - pressure_predictions_L).abs()
+	#print(results)
 	results = (nodes_pressure_nL - pressure_predictions_L).abs().min(axis=0)
 	return results
 
-def check_network_for_leaks(residuals: pd.core.frame.Series, sim_results_nL: wntr.sim.results.SimulationResults,
-							test_sim: wntr.sim.results.SimulationResults, linreg_models: dict,
-							norm_params: dict) -> pd.core.frame.DataFrame:
+def check_network_for_leaks_v1(residuals: pd.core.frame.Series, sim_results_nL: wntr.sim.results.SimulationResults,
+							   test_sim: wntr.sim.results.SimulationResults, linreg_models: dict,
+							   norm_params: dict) -> pd.core.frame.DataFrame:
+	"""
+	First attempt at creating an algorithm for finding leaks. Long story short, calculates the diffrence:
+				simulation results with NO LEAK - linreg predictions based on limited number of sensors in real-time
+
+				After examining the plots of results the algorithm has been put away in order to pursue a better solution.
+
+	Arguments:	residuals - residuums calculated in find_residuals() (not currently used due to algorithm not working well enough)
+				sim_results_nL - simulation results of the water network with a leak on a particular nodee
+				test_sim - simulation results of the case we want to predict leaks on
+				linreg_models - linear regression models for each node (created by model_network_with_linreg())
+				norm_params - normalization params for input data for linreg models (created by model_network_with_linreg())
+	Returns:	results - DF of diffrences explained in the function comment header
+
+	"""
 	leak_predictions = {}
 
 	# join flowrate and pressure measurements into a single DataFrame
@@ -213,38 +229,55 @@ def check_network_for_leaks(residuals: pd.core.frame.Series, sim_results_nL: wnt
 		# predict pressure for each node
 		leak_predictions[node] = linreg_dict['linreg'].predict(sim_results_to_check)
 
-	index = [3600*i for i in range(len(test_sim.index))]
-	results = pd.DataFrame(data=leak_predictions, index=index)
-	#results = pd.DataFrame(data=leak_predictions)
-	results = results[list(residuals.index)]
-	sim_results_nL = sim_results_nL.node['pressure'][list(residuals.index)]
-	subtraction = (sim_results_nL - results).abs()
-	#print(subtraction.loc[10*3600:20*3600])
-	subtraction.plot()
+	index = [3600*i for i in range(len(test_sim.index))]															# indexes for proper DF creation
+	results = pd.DataFrame(data=leak_predictions, index=index)														# DF of linreg pressure predictions
+	#results = results[list(residuals.index)]																		# filter only predictions we have residuals for
+	sim_results_nL = sim_results_nL.node['pressure'][list(residuals.index)]											# get simulation results of no leak
+	results = (sim_results_nL - results)																			# get diff of the two														
+	results.plot()
 	plt.show()
 
-	# results = results.sub(residuals, axis=1)
-	#print(results)
 	return results
 
-if __name__ == '__main__':
+def check_network_for_leaks_v1_eval():
+	"""
+	Setup for evaluation of 1st version of leak finding algorithm - check_network_for_leaks_v1()
+	Arguments:	None
+	Returns:	None
+	"""
+	# params for finding residuals between simulation with leaks and linreg predictions
 	leak_start = 1
-	leak_end = 99
-	leak_area = 0.0005
+	leak_end = 30
+	leak_area = 0.0001
 
+	# model the whole network with linreg models
 	models, normalization_params = model_network_with_linreg(n='all')
+
+	# get pressure predictions for each node when there's a leak on this exact node 
 	pressure_predicted_L = predict_pressure_on_leaks(linreg_models=models, norm_params=normalization_params,
 													 leak_start=leak_start, leak_end=leak_end, leak_area=leak_area)
+
+	# calculate the residuals
 	residuals = find_residuals(pressure_predictions_L=pressure_predicted_L, leak_start=leak_start, leak_end=leak_end)
 
+	# create NetworkX graph of water network
 	G = ng.create_graph()
 
 	# get simulation results for the network WITHOUT leaks
 	sim_results_nL = wntr_WSN.get_sim_results()
 
-	node = 'J3'
+	# params for simulation of the node we'll try to detect a leak on
+	node = 'J4'
 	test_leak_start = 10
-	test_leak_end = 40
-	network_to_be_checked = wntr_WSN.get_sim_results_LEAK(node=node, area=0.001, start_time=test_leak_start, end_time=test_leak_end)
+	test_leak_end = 60
+	test_leak_area = 0.0001
 
-	idk = check_network_for_leaks(residuals, sim_results_nL, network_to_be_checked, models, normalization_params)
+	# simulate leak on a node we'll try to detect a leak on
+	network_to_be_checked = wntr_WSN.get_sim_results_LEAK(node=node, area=test_leak_area, start_time=test_leak_start, end_time=test_leak_end)
+
+	# check said network for leaks, get graphs of v1 algorithm values over time
+	temp = check_network_for_leaks(residuals, sim_results_nL, sim_results_nL, models, normalization_params)
+	return
+
+if __name__ == '__main__':
+	
