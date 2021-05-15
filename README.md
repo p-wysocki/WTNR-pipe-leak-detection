@@ -1,7 +1,7 @@
 # WTNR-pipe-leak-detection
 Machine learning project focused on detecting underground equipment failure
 
-The analysed algorithm models all of water networks' nodes with linear regression using a limited set of sensors. They are chosen by Dijkstra path finding algorithm (closest sensors weighted by the pipe length. The water network model of Walkerton city is contained in a file of .inp extension which I am not allowed to share.
+The analysed algorithm models all of water networks' nodes with linear regression using a limited set of sensors. They are chosen by Dijkstra path finding algorithm (closest sensors weighted by the pipe length). The water network model of Walkerton city is contained in a file of .inp extension which I am not allowed to share.
 
 The files:
 1) linear_regression.ipynb           - file used when getting familiarised with the WNTR library, and prototyping first linreg models
