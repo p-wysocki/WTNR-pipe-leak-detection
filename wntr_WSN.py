@@ -23,7 +23,7 @@ def get_sim_results() -> wntr.sim.results.SimulationResults:
 	sim = wntr.sim.WNTRSimulator(wn)
 	return sim.run_sim()
 
-def get_sim_results_LEAK(node: str, area: float, start_time: int, end_time: int):
+def get_sim_results_LEAK(node: str, area: float, start_time: int, end_time: int) -> wntr.sim.results.SimulationResults:
 	"""
 	Runs and returns a hydraulic simulation WNTR object (WITH A LEAK)
 	Arguments:	node - node which will have the leak (str)

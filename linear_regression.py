@@ -196,10 +196,8 @@ def check_network_for_leaks_v1(residuals: pd.core.frame.Series, sim_results_nL: 
 							   test_sim: wntr.sim.results.SimulationResults, linreg_models: dict,
 							   norm_params: dict) -> pd.core.frame.DataFrame:
 	"""
-	First attempt at creating an algorithm for finding leaks. Long story short, calculates the diffrence:
-				simulation results with NO LEAK - linreg predictions based on limited number of sensors in real-time
-
-				After examining the plots of results the algorithm has been put away in order to pursue a better solution.
+	Attempt at creating an algorithm for finding leaks. Long story short, calculates the diffrence:
+				simulation results with NO LEAK (MINUS) linreg predictions based on limited number of sensors in real-time
 
 	Arguments:	residuals - residuums calculated in find_residuals() (not currently used due to algorithm not working well enough)
 				sim_results_nL - simulation results of the water network with a leak on a particular nodee
@@ -215,6 +213,7 @@ def check_network_for_leaks_v1(residuals: pd.core.frame.Series, sim_results_nL: 
 	test_sim = pd.concat([test_sim.node['pressure'], test_sim.link['flowrate']], axis=1)
 
 	for node in list(residuals.index.values):
+
 		# find linear regression model for this particular node
 		for model in linreg_models:
 			if model['node'] == node:
@@ -241,7 +240,7 @@ def check_network_for_leaks_v1(residuals: pd.core.frame.Series, sim_results_nL: 
 
 def check_network_for_leaks_v1_eval():
 	"""
-	Setup for evaluation of 1st version of leak finding algorithm - check_network_for_leaks_v1()
+	Setup for evaluation of leak finding algorithm - check_network_for_leaks_v1()
 	Arguments:	None
 	Returns:	None
 	"""
@@ -280,4 +279,5 @@ def check_network_for_leaks_v1_eval():
 	return
 
 if __name__ == '__main__':
+	pass
 	
